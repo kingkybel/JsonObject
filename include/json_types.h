@@ -1,5 +1,5 @@
 /*
- * Repository:  https://github.com/kingkybel/CPP-utilities
+ * Repository:  https://github.com/kingkybel/JsonObject
  * File Name:   include/json_types.h
  * Description: definition of types used for json classes
  *              currently the types are aliases of boost::json::* types, but the underlying json library
