@@ -32,7 +32,7 @@ using namespace util;
 
 class JsonObjectTest : public ::testing::Test
 {
-    protected:
+  protected:
     void SetUp() override
     {
     }
@@ -46,15 +46,14 @@ TEST_F(JsonObjectTest, simple_set_and_get_key_value_tests)
 {
     auto jsonObj = JsonObject{R"(
                                 {"key":"value"}
-                                )"
-    };
-    ASSERT_NO_THROW(jsonObj.set("key","value2"));
+                                )"};
+    ASSERT_NO_THROW(jsonObj.set("key", "value2"));
     ASSERT_EQ(jsonObj.get("key"), "value2");
 
     jsonObj = JsonObject{R"(
     [1,2,3,4,5]
     )"};
-    ASSERT_NO_THROW(jsonObj.set("[2]",-666));
+    ASSERT_NO_THROW(jsonObj.set("[2]", -666));
     ASSERT_EQ(jsonObj.get("[2]"), -666);
 
     jsonObj = JsonObject{R"(
@@ -63,15 +62,14 @@ TEST_F(JsonObjectTest, simple_set_and_get_key_value_tests)
                                 {"key":"value"},
                                 ["a","b","c"]
                             ]
-                            )"
-    };
-    ASSERT_NO_THROW(jsonObj.set("[0]/key0","value0"));
+                            )"};
+    ASSERT_NO_THROW(jsonObj.set("[0]/key0", "value0"));
     ASSERT_EQ(jsonObj.get("[0]/key0"), "value0");
 
-    ASSERT_NO_THROW(jsonObj.set("[1]/key","new value"));
+    ASSERT_NO_THROW(jsonObj.set("[1]/key", "new value"));
     ASSERT_EQ(jsonObj.get("[1]/key"), "new value");
 
-    ASSERT_NO_THROW(jsonObj.set("[2]/[1]","BBB"));
+    ASSERT_NO_THROW(jsonObj.set("[2]/[1]", "BBB"));
     ASSERT_EQ(jsonObj.get("[2]/[1]"), "BBB");
 }
 
@@ -79,15 +77,42 @@ TEST_F(JsonObjectTest, set_and_get_default_key_value_tests)
 {
     auto jsonObj = JsonObject{R"(
                                 []
-                                )"
-    };
-    ASSERT_EQ(jsonObj.get("[0]","defaultValue"), "defaultValue");
-    ASSERT_EQ(jsonObj.get("[0]/key0","defaultValue"), "defaultValue");
+                                )"};
+    ASSERT_EQ(jsonObj.get("[0]", "defaultValue"), "defaultValue");
+    ASSERT_EQ(jsonObj.get("[0]/key0", "defaultValue"), "defaultValue");
 
     jsonObj = JsonObject{R"(
                                 {}
-                                )"
-    };
-    ASSERT_EQ(jsonObj.get("key","defaultValue"), "defaultValue");
-    ASSERT_EQ(jsonObj.get("key/[0]/key1","defaultValue"), "defaultValue");
+                                )"};
+    ASSERT_EQ(jsonObj.get("key", "defaultValue"), "defaultValue");
+    ASSERT_EQ(jsonObj.get("key/[0]/key1", "defaultValue"), "defaultValue");
+}
+
+TEST_F(JsonObjectTest, set_and_get_failing_default_tests)
+{
+    auto jsonObj = JsonObject{R"(
+                                []
+                                )"};
+    // NOLINTNEXTLINE
+    ASSERT_THROW(auto x = jsonObj.get("key", "defaultValue"), std::invalid_argument);
+
+    jsonObj = JsonObject{R"(
+                                {}
+                                )"};
+
+
+    // NOLINTNEXTLINE
+    ASSERT_THROW(auto x = jsonObj.get("[0]", "defaultValue"), std::invalid_argument);
+
+    jsonObj = JsonObject{R"(
+                                [{"key":"value"}]
+                                )"};
+    // NOLINTNEXTLINE
+    ASSERT_THROW(auto x = jsonObj.get("[0]/[1]", "defaultValue"), std::invalid_argument);
+
+    jsonObj = JsonObject{R"(
+                                {"key":["value"]}
+                                )"};
+    // NOLINTNEXTLINE
+    ASSERT_THROW(auto x = jsonObj.get("key/key2", "defaultValue"), std::invalid_argument);
 }

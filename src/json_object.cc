@@ -25,10 +25,12 @@
 
 #include "json_object.h"
 
+#include <sstream>
+
 namespace util
 {
 JsonObject::JsonObject()
-    : json_(boost::json::object{})
+    : json_(object_type{})
 {
 }
 
@@ -42,14 +44,16 @@ JsonObject::JsonObject(std::string const& jsonStr)
     return boost::json::serialize(json_);
 }
 
-[[nodiscard]] boost::json::value JsonObject::get(std::string const& path, boost::json::value const& defaultValue) const
+[[nodiscard]] value_type
+    JsonObject::get(std::string const& path, std::optional<value_type> const& defaultValue) const
 {
     return get(JsonKeyPath{path}, defaultValue);
 }
 
-[[nodiscard]] boost::json::value JsonObject::get(JsonKeyPath const& path, boost::json::value const& defaultValue) const
+[[nodiscard]] value_type
+    JsonObject::get(JsonKeyPath const& path, std::optional<value_type> const& defaultValue) const
 {
-    boost::json::value const* current = &json_;
+    value_type const* current = &json_;
     for (auto const& key: path.getKeys())
     {
         if (key->isIndex())
@@ -57,21 +61,31 @@ JsonObject::JsonObject(std::string const& jsonStr)
             auto const* indexKey = dynamic_cast<JsonIndexKey*>(key.get());
             if (!current->is_array())
             {
-                return defaultValue;
+                throw std::invalid_argument("key '" + key->toString() + "' and array-container are incompatible");
             }
             int64_t idx = indexKey->getIndex(current->as_array());
             if (idx < 0 || idx >= static_cast<int64_t>(current->as_array().size()))
             {
-                return defaultValue;
+                if (!defaultValue)
+                {
+                    std::ostringstream ss;
+                    ss << "Index '" << idx <<"' is out of bounds [0.." << current->as_array().size() << "]";
+                    throw std::invalid_argument(ss.str());
+                }
+                return defaultValue.value();
             }
             current = &current->as_array()[idx];
         }
         else
         {
             auto const* stringKey = dynamic_cast<JsonStringKey*>(key.get());
-            if (!current->is_object() || !current->as_object().contains(stringKey->getKey()))
+            if (!current->is_object())
             {
-                return defaultValue;
+                throw std::invalid_argument("key '" + key->toString() + "' and array-container are incompatible");
+            }
+            if (!current->as_object().contains(stringKey->getKey()) && defaultValue)
+            {
+                return defaultValue.value();
             }
             current = &current->as_object().at(stringKey->getKey());
         }
@@ -79,14 +93,14 @@ JsonObject::JsonObject(std::string const& jsonStr)
     return *current;
 }
 
-void JsonObject::set(std::string const& path, boost::json::value const& value, bool force)
+void JsonObject::set(std::string const& path, value_type const& value, bool force)
 {
     set(JsonKeyPath{path}, value, force);
 }
 
-void JsonObject::set(JsonKeyPath const& path, boost::json::value const& value, bool force)
+void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool force)
 {
-    boost::json::value* current = &json_;
+    value_type* current = &json_;
     for (size_t i = 0; i < path.getKeys().size(); ++i)
     {
         auto const& key = path.getKeys()[i];
@@ -131,7 +145,7 @@ void JsonObject::set(JsonKeyPath const& path, boost::json::value const& value, b
             {
                 if (force)
                 {
-                    *current = boost::json::object();
+                    *current = object_type();
                 }
                 else
                 {
@@ -148,7 +162,7 @@ void JsonObject::set(JsonKeyPath const& path, boost::json::value const& value, b
             {
                 if (force)
                 {
-                    obj[stringKey->getKey()] = boost::json::object();
+                    obj[stringKey->getKey()] = object_type();
                 }
                 else
                 {
@@ -159,4 +173,95 @@ void JsonObject::set(JsonKeyPath const& path, boost::json::value const& value, b
         }
     }
 }
+
+std::ostream&
+    JsonObject::prettyPrint(std::ostream& os, value_type const& jv, int indentWidth, std::string* indent) const
+{
+    std::string indent_;
+    if(!indent)
+        indent = &indent_;
+    switch(static_cast<kind>(jv.kind()))
+    {
+        case kind::object:
+        {
+            os << "{\n";
+            indent->append(indentWidth, ' ');
+            auto const& obj = jv.get_object();
+            if(!obj.empty())
+            {
+                auto it = obj.begin();
+                for(;;)
+                {
+                    os << *indent << to_json_string(it->key()) << " : ";
+                    prettyPrint(os, it->value(), indentWidth, indent);
+                    if(++it == obj.end())
+                        break;
+                    os << ",\n";
+                }
+            }
+            os << "\n";
+            indent->resize(indent->size() - indentWidth);
+            os << *indent << "}";
+            break;
+        }
+
+        case kind::array:
+        {
+            os << "[\n";
+            indent->append(indentWidth, ' ');
+            auto const& arr = jv.get_array();
+            if(!arr.empty())
+            {
+                auto it = arr.begin();
+                for(;;)
+                {
+                    os << *indent;
+                    prettyPrint(os, *it, indentWidth, indent);
+                    if(++it == arr.end())
+                        break;
+                    os << ",\n";
+                }
+            }
+            os << "\n";
+            indent->resize(indent->size() - indentWidth);
+            os << *indent << "]";
+            break;
+        }
+
+        case kind::string:
+        {
+            os << to_json_string(jv.get_string());
+            break;
+        }
+
+        case kind::uint64:
+            os << jv.get_uint64();
+            break;
+
+        case kind::int64:
+            os << jv.get_int64();
+            break;
+
+        case kind::double_:
+            os << jv.get_double();
+            break;
+
+        case kind::bool_:
+            if(jv.get_bool())
+                os << "true";
+            else
+                os << "false";
+            break;
+
+        case kind::null:
+            os << "null";
+            break;
+    }
+
+    if(indent->empty())
+        os << "\n";
+
+    return os;
+}
+
 } // namespace util

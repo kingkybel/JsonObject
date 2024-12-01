@@ -27,6 +27,7 @@
 #define NS_UTIL_JSON_OBJECT_H_INCLUDED
 
 #include "json_key_path.h"
+#include "json_types.h"
 
 namespace util
 {
@@ -35,42 +36,47 @@ namespace util
  * A class to handle json objects.
  * Keys in the object are addressed by paths constructed from index-keys and string-keys.
  * Index-keys can be any positive number enclosed in square brackets or [^] or [$]; e.g [^], [$], [0], [123]
- * String keys can be any string not containing '[', ']', '\\n', '\\r', only numbers, empty or whitespace-only strings or
- * strings that start or end in whitespace.
-*
-* <br><br>For example valid paths:
-* <ul>
-* <li>"key"</li>
-* <li>"[0]"</li>
-* <li>"key/[2]/key3/[^]"</li>
-* <li>"a/b/c/d/e/f"</li>
-* <li>"[^]/[^]/[^]/[^]/[^]/key"</li>
-* </ul>
-*
-* <br><br>For example invalid paths:
-* <ul>
-* <li>"[key]"</li>
-* <li>"[0] "</li>
-* <li>"key/[2]/key]3/[^]"</li>
-* <li>"a/b/666/d/e/f"</li>
-* <li>"[^]/[^ ]/[ ]/[]/[^]/key"</li>
-* </ul>
+ * String keys can be any string not containing '[', ']', '\\n', '\\r', only numbers, empty or whitespace-only strings
+ * or strings that start or end in whitespace.
+ *
+ * <br><br>For example valid paths:
+ * <ul>
+ * <li>"key"</li>
+ * <li>"[0]"</li>
+ * <li>"key/[2]/key3/[^]"</li>
+ * <li>"a/b/c/d/e/f"</li>
+ * <li>"[^]/[^]/[^]/[^]/[^]/key"</li>
+ * </ul>
+ *
+ * <br><br>For example invalid paths:
+ * <ul>
+ * <li>"[key]"</li>
+ * <li>"[0] "</li>
+ * <li>"key/[2]/key]3/[^]"</li>
+ * <li>"a/b/666/d/e/f"</li>
+ * <li>"[^]/[^ ]/[ ]/[]/[^]/key"</li>
+ * </ul>
  */
 class JsonObject
 {
-    boost::json::value json_{};
+    value_type json_{};
 
   public:
     JsonObject();
     explicit JsonObject(std::string const& jsonStr);
 
+    [[nodiscard]] value_type
+        get(std::string const& path, std::optional<value_type> const& defaultValue = std::optional<value_type>{}) const;
+
+    [[nodiscard]] value_type
+        get(JsonKeyPath const& path, std::optional<value_type> const& defaultValue = std::optional<value_type>{}) const;
+
+    void set(std::string const& path, value_type const& value, bool force = false);
+    void set(JsonKeyPath const& path, value_type const& value, bool force = false);
+
     [[nodiscard]] std::string toString() const;
-
-    [[nodiscard]] boost::json::value get(std::string const& path, boost::json::value const& defaultValue = {}) const;
-    [[nodiscard]] boost::json::value get(JsonKeyPath const& path, boost::json::value const& defaultValue = {}) const;
-
-    void set(std::string const& path, boost::json::value const& value, bool force = false);
-    void set(JsonKeyPath const& path, boost::json::value const& value, bool force = false);
+    std::ostream&
+        prettyPrint(std::ostream& os, value_type const& jv, int indentWidth = 4, std::string* indent = nullptr) const;
 };
 } // namespace util
 
