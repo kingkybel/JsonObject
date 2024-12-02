@@ -2,7 +2,7 @@
 
 ## Main idea
 
-A small wrapper around boost-json to make handling of keys_ easier.
+A small wrapper around boost-json to make handling of keys easier.
 The idea behind the library is make the manipulation of json objects a bit easier, minimise the need for tedious
 try-/catch-blocks and iterations. Also front-/back-insertions and retrieval in list was added for convenience.
 
