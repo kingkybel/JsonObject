@@ -24,6 +24,8 @@
  */
 #include "json_object.h"
 
+#include <cstdio>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <string>
 
@@ -183,4 +185,35 @@ TEST_F(JsonObjectTest, set_special_symbol_force_tests)
     ASSERT_EQ(jsonObj.get("[$]"), "insertedAtEnd");
     ASSERT_NO_THROW(jsonObj.set("[^]/[$]/[^]", "insertedNewPosZero", true));
     ASSERT_EQ(jsonObj.get("[0]/[0]/[0]"), "insertedNewPosZero");
+}
+
+TEST_F(JsonObjectTest, load_write_tests)
+{
+    auto        jsonObj  = JsonObject{R"(
+                                [
+                                    {},
+                                    {
+                                        "k1":"v1",
+                                        "k2":[]
+                                    }
+                                ]
+                                )"};
+    std::string filename = "./JsonObjectTest_load_write_tests.json";
+    jsonObj.write(filename, 0);
+    std::ifstream ifs(filename.c_str());
+    std::string   line{};
+    std::string   jsonStr{};
+    while (getline(ifs, line) && !line.empty())
+    {
+        jsonStr += line;
+    }
+    ASSERT_EQ(jsonStr, R"([{},{"k1":"v1","k2":[]}])");
+    ifs.close();
+
+    jsonObj.clear();
+    ASSERT_THROW(auto x = jsonObj.get("[0]"), std::invalid_argument);
+
+    jsonObj.load(filename);
+    ASSERT_EQ(jsonObj.get("[1]/k1"), "v1");
+    std::remove(filename.c_str());
 }

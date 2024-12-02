@@ -39,7 +39,7 @@ inline std::string to_string(boost::json::value const &val)
 {
     return val.as_string().data();
 }
-}
+} // namespace std
 
 namespace util
 {

@@ -89,6 +89,7 @@ class JsonKeyPath
 
   public:
     explicit JsonKeyPath(std::string const &path);
+    [[nodiscard]] size_t                                       size() const;
     [[nodiscard]] std::vector<std::shared_ptr<JsonKey>> const &getKeys() const;
     [[nodiscard]] std::string                                  toString() const;
 };

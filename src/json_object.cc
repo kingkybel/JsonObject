@@ -25,6 +25,7 @@
 
 #include "json_object.h"
 
+#include <fstream>
 #include <sstream>
 
 namespace util
@@ -37,6 +38,16 @@ JsonObject::JsonObject()
 JsonObject::JsonObject(std::string const& jsonStr)
 {
     json_ = from_json_string(jsonStr);
+}
+
+void JsonObject::clear()
+{
+    json_ = object_type{};
+}
+
+value_type& JsonObject::get()
+{
+    return json_;
 }
 
 value_type JsonObject::get(std::string const& path, std::optional<value_type> const& defaultValue) const
@@ -94,7 +105,7 @@ void JsonObject::set(std::string const& path, value_type const& value, bool forc
 void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool force)
 {
     value_type* current = &json_;
-    for (size_t i = 0; i < path.getKeys().size(); ++i)
+    for (size_t i = 0; i < path.size(); ++i)
     {
         auto const& key = path.getKeys()[i];
         if (key->isIndex())
@@ -118,9 +129,9 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
             {
                 // if we are forcing, or if we're at the last key of the path, and if we have a special symbol
                 // then extend the array appropriately
-                if (force || i == path.getKeys().size() - 1)
+                if (force || i == path.size() - 1)
                 {
-                    value_type extender = (i == path.getKeys().size() - 1) ? value : value_type{};
+                    value_type extender = (i == path.size() - 1) ? value : value_type{};
                     if (indexKey->isStartSymbol())
                     {
                         array_prepend(arr, extender);
@@ -140,14 +151,14 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                     std::ostringstream ss;
                     ss << "Index out of range: " << path.toString() << " at position '" << i << "' (" << key->toString()
                        << ").";
-                    if (i < path.getKeys().size() - 1)
+                    if (i < path.size() - 1)
                     {
                         ss << " Cannot extend any mid-path list when not forced.";
                     }
                     throw std::invalid_argument(ss.str());
                 }
             }
-            else if (i == path.getKeys().size() - 1)
+            else if (i == path.size() - 1)
             {
                 arr[idx] = value;
                 return;
@@ -169,7 +180,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                 }
             }
             auto& obj = current->as_object();
-            if (i == path.getKeys().size() - 1)
+            if (i == path.size() - 1)
             {
                 obj[stringKey->getKey()] = value;
                 return;
@@ -190,19 +201,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
     }
 }
 
-std::string JsonObject::toString(int indent) const
-{
-    if (indent <= 0)
-    {
-        return json_serialize(json_);
-    }
-    std::stringstream ss;
-    prettyPrint(ss, json_, indent);
-    return ss.str();
-}
-
-std::ostream&
-    JsonObject::prettyPrint(std::ostream& os, value_type const& jv, int indentWidth, std::string* indent) const
+std::ostream& prettyPrint(std::ostream& os, value_type const& jv, int indentWidth, std::string* indent = nullptr)
 {
     std::string indent_;
     if (!indent)
@@ -301,6 +300,45 @@ std::ostream&
     }
 
     return os;
+}
+
+std::string JsonObject::toString(size_t indent) const
+{
+    if (indent <= 0)
+    {
+        return json_serialize(json_);
+    }
+    std::stringstream ss;
+    prettyPrint(ss, json_, indent);
+    return ss.str();
+}
+
+void JsonObject::load(std::string const& filename)
+{
+    std::ifstream ifs(filename.c_str());
+
+    if (!ifs.is_open())
+    {
+        throw std::invalid_argument(filename + " cannot be opened for reading");
+    }
+    std::string line;
+    std::string jsonStr{};
+    while (getline(ifs, line) && !line.empty())
+    {
+        jsonStr += line;
+    }
+    json_ = from_json_string(jsonStr);
+}
+
+void JsonObject::write(std::string const& filename, size_t indent) const
+{
+    std::ofstream ofs(filename.c_str());
+
+    if (!ofs.is_open())
+    {
+        throw std::invalid_argument(filename + " cannot be opened for writing");
+    }
+    ofs << toString(indent);
 }
 
 } // namespace util

@@ -65,18 +65,64 @@ class JsonObject
     JsonObject();
     explicit JsonObject(std::string const& jsonStr);
 
+    void clear();
+
+    /**
+     * @brief Retrieve the underlying object.
+     * @return the underlying object
+     */
+    [[nodiscard]] value_type& get();
+
+    /**
+     * @brief Get a value from this object given a path.
+     * @param path key-path as string
+     * @param defaultValue optional default value to return, if given path is compatible with object
+     * @return the value if possible
+     * @throws std::invalid_argument when the path is incorrect, the value cannot be found or the path is incompatible
+     *                               with the object
+     */
     [[nodiscard]] value_type
         get(std::string const& path, std::optional<value_type> const& defaultValue = std::optional<value_type>{}) const;
 
+    /**
+     * @brief Get a value from this object given a path.
+     * @param path key-path as JsonKeyPath
+     * @param defaultValue optional default value to return, if given path is compatible with object
+     * @return the value if possible
+     * @throws std::invalid_argument when the path is incorrect, the value cannot be found or the path is incompatible
+     *                               with the object
+     */
     [[nodiscard]] value_type
         get(JsonKeyPath const& path, std::optional<value_type> const& defaultValue = std::optional<value_type>{}) const;
 
+    /**
+     * @brief Set the value in the json object, if possible
+     * @param path key-path as string
+     * @param value value to set
+     * @param force if true, then create missing keys, as long as compatible
+     * @throws std::invalid_argument when the path is incorrect or the path is incompatible with the object
+     */
     void set(std::string const& path, value_type const& value, bool force = false);
+
+    /**
+     * @brief Set the value in the json object, if possible
+     * @param path key-path as JsonKeyPath
+     * @param value value to set
+     * @param force if true, then create missing keys, as long as compatible
+     * @throws std::invalid_argument when the path is incorrect or the path is incompatible with the object
+     */
     void set(JsonKeyPath const& path, value_type const& value, bool force = false);
 
-    [[nodiscard]] std::string toString(int indent = 4) const;
-    std::ostream&
-        prettyPrint(std::ostream& os, value_type const& jv, int indentWidth = 4, std::string* indent = nullptr) const;
+    /**
+     * @brief Make a string of the object.
+     * @param indent indentation spaces
+     * @return a formated json-string
+     */
+    [[nodiscard]] std::string toString(size_t indent = 4) const;
+
+    void load(std::string const& filename);
+
+    void write(std::string const& filename, size_t indent = 4) const;
 };
 
 } // namespace util

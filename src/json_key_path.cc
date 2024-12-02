@@ -166,6 +166,11 @@ JsonKeyPath::JsonKeyPath(std::string const &path)
     }
 }
 
+size_t JsonKeyPath::size() const
+{
+    return keys_.size();
+}
+
 std::vector<std::shared_ptr<JsonKey>> const &JsonKeyPath::getKeys() const
 {
     return keys_;
