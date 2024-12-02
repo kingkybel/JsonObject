@@ -75,6 +75,8 @@ class JsonIndexKey : public JsonKey
     explicit JsonIndexKey(std::string const &idx);
     [[nodiscard]] std::string toString() const override;
     [[nodiscard]] bool        isIndex() const override;
+    [[nodiscard]] bool        isStartSymbol() const;
+    [[nodiscard]] bool        isEndSymbol() const;
     [[nodiscard]] int64_t     getIndex(boost::json::array const &array) const;
 };
 
@@ -83,7 +85,7 @@ class JsonIndexKey : public JsonKey
  */
 class JsonKeyPath
 {
-    std::vector<std::shared_ptr<JsonKey>> keys;
+    std::vector<std::shared_ptr<JsonKey>> keys_;
 
   public:
     explicit JsonKeyPath(std::string const &path);

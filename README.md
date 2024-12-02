@@ -1,6 +1,6 @@
 # JasonObject
 
-A small wrapper around boost-json to make handling of keys easier.
+A small wrapper around boost-json to make handling of keys_ easier.
 
 # Installation
 

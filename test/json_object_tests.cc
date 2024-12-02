@@ -42,7 +42,7 @@ class JsonObjectTest : public ::testing::Test
     }
 };
 
-TEST_F(JsonObjectTest, simple_set_and_get_key_value_tests)
+TEST_F(JsonObjectTest, simple_set_and_get_tests)
 {
     auto jsonObj = JsonObject{R"(
                                 {"key":"value"}
@@ -73,7 +73,7 @@ TEST_F(JsonObjectTest, simple_set_and_get_key_value_tests)
     ASSERT_EQ(jsonObj.get("[2]/[1]"), "BBB");
 }
 
-TEST_F(JsonObjectTest, set_and_get_default_key_value_tests)
+TEST_F(JsonObjectTest, set_and_get_default_tests)
 {
     auto jsonObj = JsonObject{R"(
                                 []
@@ -100,7 +100,6 @@ TEST_F(JsonObjectTest, set_and_get_failing_default_tests)
                                 {}
                                 )"};
 
-
     // NOLINTNEXTLINE
     ASSERT_THROW(auto x = jsonObj.get("[0]", "defaultValue"), std::invalid_argument);
 
@@ -115,4 +114,73 @@ TEST_F(JsonObjectTest, set_and_get_failing_default_tests)
                                 )"};
     // NOLINTNEXTLINE
     ASSERT_THROW(auto x = jsonObj.get("key/key2", "defaultValue"), std::invalid_argument);
+}
+
+TEST_F(JsonObjectTest, get_special_symbol_tests)
+{
+    auto       jsonObj = JsonObject{R"(
+                                [
+                                    [1,2,3],
+                                    ["a","b","c"]
+                                ]
+                                )"};
+    value_type v;
+    ASSERT_NO_THROW(v = jsonObj.get("[^]"));
+    ASSERT_EQ(as_array(v)[0], 1);
+
+    ASSERT_NO_THROW(v = jsonObj.get("[$]"));
+    ASSERT_EQ(as_array(v)[2], "c");
+
+    ASSERT_NO_THROW(v = jsonObj.get("[^]/[$]"));
+    ASSERT_EQ(v, 3);
+
+    ASSERT_NO_THROW(v = jsonObj.get("[$]/[^]"));
+    ASSERT_EQ(v, "a");
+
+    jsonObj = JsonObject{R"(
+                                [
+                                    [],
+                                    ["a","b","c"]
+                                ]
+                                )"};
+    ASSERT_THROW(v = jsonObj.get("[^]/[0]"), std::invalid_argument);
+    ASSERT_THROW(v = jsonObj.get("[0]/[$]"), std::invalid_argument);
+}
+
+TEST_F(JsonObjectTest, set_special_symbol_no_force_tests)
+{
+    auto jsonObj = JsonObject{R"(
+                                []
+                                )"};
+    ASSERT_NO_THROW(jsonObj.set("[^]", 1));
+    ASSERT_EQ(jsonObj.get("[0]"), 1);
+    ASSERT_NO_THROW(jsonObj.set("[$]", 2));
+    ASSERT_EQ(jsonObj.get("[0]"), 1);
+    ASSERT_EQ(jsonObj.get("[1]"), 2);
+
+    jsonObj = JsonObject{R"(
+                                [[]]
+                                )"};
+    ASSERT_THROW(jsonObj.set("[^]/[^]", 1), std::invalid_argument);
+    ASSERT_NO_THROW(jsonObj.set("[0]/[^]", 1));
+    ASSERT_EQ(jsonObj.get("[0]/[0]"), 1);
+}
+
+TEST_F(JsonObjectTest, set_special_symbol_force_tests)
+{
+    auto jsonObj = JsonObject{R"(
+                                [
+                                    {},
+                                    {
+                                        "k1":"v1",
+                                        "k2":[]
+                                    }
+                                ]
+                                )"};
+    ASSERT_NO_THROW(jsonObj.set("[^]", "insertedAtPosZero", true));
+    ASSERT_EQ(jsonObj.get("[0]"), "insertedAtPosZero");
+    ASSERT_NO_THROW(jsonObj.set("[$]", "insertedAtEnd", true));
+    ASSERT_EQ(jsonObj.get("[$]"), "insertedAtEnd");
+    ASSERT_NO_THROW(jsonObj.set("[^]/[$]/[^]", "insertedNewPosZero", true));
+    ASSERT_EQ(jsonObj.get("[0]/[0]/[0]"), "insertedNewPosZero");
 }

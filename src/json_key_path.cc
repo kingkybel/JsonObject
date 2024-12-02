@@ -66,7 +66,6 @@ std::string const &JsonStringKey::getKey() const
     return key_;
 }
 
-
 JsonIndexKey::JsonIndexKey(std::string const &idx)
 {
     if (idx.size() < 3 || idx[0] != '[' || idx[idx.size() - 1] != ']' ||
@@ -120,6 +119,16 @@ bool JsonIndexKey::isIndex() const
     return true;
 }
 
+bool JsonIndexKey::isStartSymbol() const
+{
+    return isStartSymbol_;
+}
+
+bool JsonIndexKey::isEndSymbol() const
+{
+    return isEndSymbol_;
+}
+
 int64_t JsonIndexKey::getIndex(boost::json::array const &array) const
 {
     if (isStartSymbol_)
@@ -132,7 +141,6 @@ int64_t JsonIndexKey::getIndex(boost::json::array const &array) const
     }
     return index_;
 }
-
 
 JsonKeyPath::JsonKeyPath(std::string const &path)
 {
@@ -148,11 +156,11 @@ JsonKeyPath::JsonKeyPath(std::string const &path)
         {
             if (segment.front() == '[' && segment.back() == ']')
             {
-                keys.emplace_back(std::make_shared<JsonIndexKey>(segment));
+                keys_.emplace_back(std::make_shared<JsonIndexKey>(segment));
             }
             else
             {
-                keys.emplace_back(std::make_shared<JsonStringKey>(segment));
+                keys_.emplace_back(std::make_shared<JsonStringKey>(segment));
             }
         }
     }
@@ -160,15 +168,15 @@ JsonKeyPath::JsonKeyPath(std::string const &path)
 
 std::vector<std::shared_ptr<JsonKey>> const &JsonKeyPath::getKeys() const
 {
-    return keys;
+    return keys_;
 }
 
 std::string JsonKeyPath::toString() const
 {
     std::ostringstream oss;
-    for (auto const &key: keys)
+    for (size_t i = 0UL; i < keys_.size(); ++i)
     {
-        oss << key->toString() << "/";
+        oss << keys_[i]->toString() << (i < keys_.size() - 1 ? "/" : "");
     }
     return oss.str();
 }

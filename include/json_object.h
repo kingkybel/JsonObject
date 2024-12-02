@@ -34,7 +34,7 @@ namespace util
 
 /**
  * A class to handle json objects.
- * Keys in the object are addressed by paths constructed from index-keys and string-keys.
+ * Keys in the object are addressed by paths constructed from index-keys and string-keys_.
  * Index-keys can be any positive number enclosed in square brackets or [^] or [$]; e.g [^], [$], [0], [123]
  * String keys can be any string not containing '[', ']', '\\n', '\\r', only numbers, empty or whitespace-only strings
  * or strings that start or end in whitespace.
@@ -74,10 +74,11 @@ class JsonObject
     void set(std::string const& path, value_type const& value, bool force = false);
     void set(JsonKeyPath const& path, value_type const& value, bool force = false);
 
-    [[nodiscard]] std::string toString() const;
+    [[nodiscard]] std::string toString(int indent = 4) const;
     std::ostream&
         prettyPrint(std::ostream& os, value_type const& jv, int indentWidth = 4, std::string* indent = nullptr) const;
 };
+
 } // namespace util
 
 #endif // NS_UTIL_JSON_OBJECT_H_INCLUDED
