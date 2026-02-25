@@ -95,3 +95,36 @@ TEST_F(JsonKeyPathTest, invalid_key_paths_test)
     ASSERT_THROW(JsonKeyPath("a/b/[ 4]"), std::invalid_argument);
     ASSERT_THROW(JsonKeyPath("a/b/[4 ]"), std::invalid_argument);
 }
+
+TEST_F(JsonKeyPathTest, key_path_accessors_and_roundtrip_test)
+{
+    JsonKeyPath keyPath("a/[0]/b/[$]");
+    ASSERT_EQ(keyPath.size(), 4UL);
+    ASSERT_EQ(keyPath.toString(), "a/[0]/b/[$]");
+    ASSERT_FALSE(keyPath.getKeys()[0]->isIndex());
+    ASSERT_TRUE(keyPath.getKeys()[1]->isIndex());
+}
+
+TEST_F(JsonKeyPathTest, empty_and_slashy_paths_test)
+{
+    ASSERT_THROW(JsonKeyPath(""), std::invalid_argument);
+
+    JsonKeyPath normalized("/a//b/[0]///");
+    ASSERT_EQ(normalized.size(), 3UL);
+    ASSERT_EQ(normalized.toString(), "a/b/[0]");
+}
+
+TEST_F(JsonKeyPathTest, index_key_get_index_test)
+{
+    boost::json::array arr;
+    arr.push_back(10);
+    arr.push_back(20);
+
+    JsonIndexKey first("[^]");
+    JsonIndexKey last("[$]");
+    JsonIndexKey middle("[1]");
+
+    ASSERT_EQ(first.getIndex(arr), 0);
+    ASSERT_EQ(last.getIndex(arr), 1);
+    ASSERT_EQ(middle.getIndex(arr), 1);
+}

@@ -217,3 +217,48 @@ TEST_F(JsonObjectTest, load_write_tests)
     ASSERT_EQ(jsonObj.get("[1]/k1"), "v1");
     std::remove(filename.c_str());
 }
+
+TEST_F(JsonObjectTest, basic_accessors_and_string_rendering_tests)
+{
+    JsonObject jsonObj{};
+    ASSERT_TRUE(util::is_object(jsonObj.get()));
+    ASSERT_TRUE(as_object(jsonObj.get()).empty());
+
+    jsonObj.get().as_object()["num"] = 42;
+    ASSERT_EQ(jsonObj.get("num"), 42);
+
+    ASSERT_EQ(jsonObj.toString(0), R"({"num":42})");
+    std::string pretty = jsonObj.toString(2);
+    ASSERT_NE(pretty.find("{\n"), std::string::npos);
+    ASSERT_NE(pretty.find("\"num\" : 42"), std::string::npos);
+
+    jsonObj.clear();
+    ASSERT_TRUE(util::is_object(jsonObj.get()));
+    ASSERT_TRUE(as_object(jsonObj.get()).empty());
+}
+
+TEST_F(JsonObjectTest, key_path_overload_and_set_error_paths_tests)
+{
+    auto jsonObj = JsonObject{R"({"root":[{"value":1}]})"};
+    JsonKeyPath path("root/[0]/value");
+    ASSERT_NO_THROW(jsonObj.set(path, 2));
+    ASSERT_EQ(jsonObj.get(path), 2);
+
+    ASSERT_THROW(jsonObj.set("root/[1]/value", 3), std::invalid_argument);
+    ASSERT_THROW(jsonObj.set("missing/key", 3), std::runtime_error);
+    ASSERT_THROW(jsonObj.set("root/[0]/value/[0]", 3), std::runtime_error);
+}
+
+TEST_F(JsonObjectTest, force_set_container_replacement_tests)
+{
+    auto jsonObj = JsonObject{R"({"root":1})"};
+    ASSERT_NO_THROW(jsonObj.set("root/[0]/leaf", "x", true));
+    ASSERT_EQ(jsonObj.get("root/[0]/leaf"), "x");
+}
+
+TEST_F(JsonObjectTest, load_write_open_failure_tests)
+{
+    JsonObject jsonObj{};
+    ASSERT_THROW(jsonObj.load("/definitely/not/a/real/file.json"), std::invalid_argument);
+    ASSERT_THROW(jsonObj.write("/definitely/not/a/real/file.json"), std::invalid_argument);
+}
