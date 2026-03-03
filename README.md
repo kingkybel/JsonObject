@@ -1,3 +1,5 @@
+![JsonObject banner](./assets/banners/json_object_banner.svg)
+
 # JsonObject
 
 `JsonObject` is a small C++ library built on top of Boost.JSON that makes nested JSON access and mutation easier via slash-separated key paths.
@@ -97,3 +99,9 @@ sudo cmake --install build
 ```
 
 Headers are installed to `${INSTALL_PREFIX}/include/dkyb` and the static library to `${INSTALL_PREFIX}/lib`.
+
+## Powered by
+
+Reduce the smells, keep on top of code-quality. Sonar Qube is run on every push to the `main` branch on GitHub.
+
+[![SonarQubeCloud](assets/icons/logo-sonarqube-cloud-small.png)](https://sonarcloud.io/project/overview?id=kingkybel)

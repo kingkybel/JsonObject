@@ -7,8 +7,7 @@ add_executable(run_tests
 target_link_libraries(run_tests
         gtest
         gtest_main
-        boost_json
+        Boost::json
         dkjsonobject
 )
 add_test(NAME run_tests COMMAND run_tests)
-
