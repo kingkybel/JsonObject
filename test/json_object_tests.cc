@@ -37,10 +37,12 @@ class JsonObjectTest : public ::testing::Test
   protected:
     void SetUp() override
     {
+        // just in case
     }
 
     void TearDown() override
     {
+        // just in case
     }
 };
 
@@ -239,7 +241,7 @@ TEST_F(JsonObjectTest, basic_accessors_and_string_rendering_tests)
 
 TEST_F(JsonObjectTest, key_path_overload_and_set_error_paths_tests)
 {
-    auto jsonObj = JsonObject{R"({"root":[{"value":1}]})"};
+    auto        jsonObj = JsonObject{R"({"root":[{"value":1}]})"};
     JsonKeyPath path("root/[0]/value");
     ASSERT_NO_THROW(jsonObj.set(path, 2));
     ASSERT_EQ(jsonObj.get(path), 2);

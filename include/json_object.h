@@ -32,6 +32,21 @@
 namespace util
 {
 
+struct expected_object_error : public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
+struct expected_array_error : public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
+struct missing_key_error : public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
 /**
  * A class to handle json objects.
  * Keys in the object are addressed by paths constructed from index-keys and string-keys_.

@@ -36,3 +36,6 @@
 
 # idea-confif
 /.idea/
+
+# zencoder dirs
+/.zencoder/

@@ -32,6 +32,8 @@
 #include <boost/json/kind.hpp>
 #include <string>
 #include <string_view>
+#include <utility>
+
 
 namespace std
 {
@@ -47,28 +49,28 @@ namespace util
 enum class kind : unsigned char
 {
     /// The null value.
-    null = static_cast<unsigned char>(boost::json::kind::null),
+    null = std::to_underlying(boost::json::kind::null),
 
     /// A `bool`.
-    bool_ = static_cast<unsigned char>(boost::json::kind::bool_),
+    bool_ = std::to_underlying(boost::json::kind::bool_),
 
     /// A `std::int64_t`
-    int64 = static_cast<unsigned char>(boost::json::kind::int64),
+    int64 = std::to_underlying(boost::json::kind::int64),
 
     /// A `std::uint64_t`
-    uint64 = static_cast<unsigned char>(boost::json::kind::uint64),
+    uint64 = std::to_underlying(boost::json::kind::uint64),
 
     /// A `double`.
-    double_ = static_cast<unsigned char>(boost::json::kind::double_),
+    double_ = std::to_underlying(boost::json::kind::double_),
 
     /// A @ref string.
-    string = static_cast<unsigned char>(boost::json::kind::string),
+    string = std::to_underlying(boost::json::kind::string),
 
     /// An @ref array.
-    array = static_cast<unsigned char>(boost::json::kind::array),
+    array = std::to_underlying(boost::json::kind::array),
 
     /// An @ref object.
-    object = static_cast<unsigned char>(boost::json::kind::object)
+    object = std::to_underlying(boost::json::kind::object)
 };
 using key_type    = boost::json::string_view;
 using value_type  = boost::json::value;
@@ -173,22 +175,22 @@ inline bool is_object(value_type const &val)
 
 inline bool as_bool(value_type &&val)
 {
-    return val.as_bool();
+    return std::move(val).as_bool();
 }
 
 inline std::int64_t as_int64(value_type &&val)
 {
-    return val.as_int64();
+    return std::move(val).as_int64();
 }
 
 inline std::uint64_t as_uint64(value_type &&val)
 {
-    return val.as_uint64();
+    return std::move(val).as_uint64();
 }
 
 inline double as_double(value_type &&val)
 {
-    return val.as_double();
+    return std::move(val).as_double();
 }
 
 inline std::string as_string(value_type &val)

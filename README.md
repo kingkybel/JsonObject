@@ -2,79 +2,134 @@
 
 # JsonObject
 
-`JsonObject` is a small C++ library built on top of Boost.JSON that makes nested JSON access and mutation easier via slash-separated key paths.
+`JsonObject` is a C++23 library built on Boost.JSON for reading and modifying nested JSON values using slash-separated key paths.
 
-It supports:
-- Object keys (`key/subKey`)
-- Array indices (`list/[0]`)
-- Special array symbols: `[^]` (first element/start insert) and `[$]` (last element/end append)
-- Optional default values for safe `get(...)`
-- Optional `force=true` in `set(...)` to create compatible intermediate containers
-- File I/O helpers (`load(...)`, `write(...)`)
+## What this repository contains
 
-## What this repo does
+- Core library:
+  - `include/json_object.h`
+  - `include/json_key_path.h`
+  - `include/json_types.h`
+  - `src/json_object.cc`
+  - `src/json_key_path.cc`
+- Unit tests with GoogleTest in `test/`
+- CMake build based on shared settings from `cmake-common/`
 
-This repository provides:
-- The core library (`include/`, `src/`)
-- Unit tests with GoogleTest (`test/`)
-- CMake build/install setup for static library usage
+## Core capabilities
 
-The API is centered around:
-- `util::JsonObject`
-- `util::JsonKeyPath`
-- JSON abstraction aliases/helpers in `include/json_types.h`
+- Access nested JSON values with string paths like `user/profile/name`
+- Access array items with index keys like `[0]`, `[1]`
+- Use special array symbols:
+  - `[^]` first element (or prepend on `set`)
+  - `[$]` last element (or append on `set`)
+- Optional default values for safe reads
+- Optional `force=true` writes to create compatible intermediate containers
+- File I/O helpers:
+  - `load(filename)`
+  - `write(filename, indent)`
 
-## Quick example
+## Path syntax
 
-```c++
+- Segments are separated by `/`
+- Object keys are plain strings, for example: `settings/theme`
+- Array indices are bracketed, for example: `users/[0]/name`
+- Valid index symbols: `[0]`, `[1]`, ..., `[^]`, `[$]`
+- Invalid string keys include empty strings, whitespace-only strings, numeric-only strings, or keys containing `[`, `]`, `\n`, `\r`
+
+## Examples
+
+### 1) Basic get/set
+
+```cpp
 #include <dkyb/json_object.h>
 
 using util::JsonObject;
 
-JsonObject jsonObj(R"({"user":{"name":"Ada","scores":[1,2,3]}})");
+JsonObject obj(R"({"user":{"name":"Ada","age":36}})");
 
-jsonObj.set("user/name", "Ada Lovelace");
-jsonObj.set("user/scores/[$]", 4);              // append
-jsonObj.set("user/history/[0]/event", "created", true); // create missing structure
-
-auto name = jsonObj.get("user/name");
-auto last = jsonObj.get("user/scores/[$]");
+obj.set("user/name", "Ada Lovelace");
+auto name = obj.get("user/name");
 ```
 
-## Key-path rules
+### 2) Defaults and compatibility checks
 
-- Use `/` to separate path segments.
-- String keys must not be empty, must not be purely numeric, and must not contain `[`, `]`, `\n`, or `\r`.
-- Array keys are bracketed: `[0]`, `[1]`, ...
-- `[^]` means first element for `get(...)`, and insert-at-start behavior when setting at the target position.
-- `[$]` means last element for `get(...)`, and append behavior when setting at the target position.
+```cpp
+#include <dkyb/json_object.h>
 
-## Recent changes
+using util::JsonObject;
 
-Recent upstream/library changes include:
-- Added compatibility checks when calling `get(path, defaultValue)` with incompatible path/container combinations.
-- Added/amended support for special list symbols `[^]` and `[$]` for retrieval and mutation behavior.
-- Added `load(filename)` and `write(filename, indent)` API for file-based JSON I/O.
+JsonObject obj(R"({"user":{"name":"Ada"}})");
 
-Recent changes in this branch:
-- Expanded unit tests to increase coverage for:
-  - `JsonObject::get()` accessor and `clear()` behavior
-  - `toString(indent)` compact vs pretty rendering paths
-  - `get/set` overloads using `JsonKeyPath`
-  - `set(...)` force and non-force error/compatibility paths
-  - `load/write` failure handling for invalid paths
-  - `JsonKeyPath` accessor/roundtrip behavior and slash-normalized parsing
-  - `JsonIndexKey::getIndex(...)` behavior for `[0]`, `[^]`, `[$]`
+// Missing key in a compatible object path -> returns default
+auto city = obj.get("user/city", "unknown");
+
+// Incompatible path still throws (object vs array mismatch)
+// obj.get("user/[0]", "fallback");
+```
+
+### 3) Array operations with special symbols
+
+```cpp
+#include <dkyb/json_object.h>
+
+using util::JsonObject;
+
+JsonObject arr(R"([1,2,3])");
+
+arr.set("[^]", 0);  // prepend -> [0,1,2,3]
+arr.set("[$]", 4);  // append  -> [0,1,2,3,4]
+
+auto first = arr.get("[^]");
+auto last  = arr.get("[$]");
+```
+
+### 4) Force-create intermediate structures
+
+```cpp
+#include <dkyb/json_object.h>
+
+using util::JsonObject;
+
+JsonObject obj("{}");
+
+// Without force this would throw due to missing path/container
+obj.set("a/[0]/name", "node-0", true);
+// Result is compatible structure created on demand
+```
+
+### 5) Using JsonKeyPath directly
+
+```cpp
+#include <dkyb/json_key_path.h>
+#include <dkyb/json_object.h>
+
+util::JsonObject obj(R"({"items":[{"id":7}]})");
+util::JsonKeyPath path("items/[0]/id");
+
+auto id = obj.get(path);
+```
+
+### 6) Load and write files
+
+```cpp
+#include <dkyb/json_object.h>
+
+util::JsonObject obj;
+obj.load("input.json");
+obj.set("meta/version", 2, true);
+obj.write("output.json", 2);  // pretty-print with 2-space indentation
+```
 
 ## Build and test
 
 ### Dependencies
-- CMake (>= 3.8)
-- C++23 compiler
-- Boost (>= 1.86.0, including Boost.JSON)
-- GoogleTest
 
-### Build
+- CMake
+- C++23 compiler
+- Boost (Boost.JSON component)
+- GoogleTest (for tests)
+
+### Configure and build
 
 ```bash
 git clone --recurse-submodules -j "$(nproc)" git@github.com:kingkybel/JsonObject.git
@@ -86,7 +141,8 @@ cmake --build build --parallel "$(nproc)"
 ### Run tests
 
 ```bash
-./build/Debug/bin/run_tests
+ctest --test-dir build --output-on-failure
+# or: ./build/Debug/bin/run_tests
 ```
 
 ## Install
@@ -98,7 +154,7 @@ cmake --build build --parallel "$(nproc)"
 sudo cmake --install build
 ```
 
-Headers are installed to `${INSTALL_PREFIX}/include/dkyb` and the static library to `${INSTALL_PREFIX}/lib`.
+Headers are installed to `${INSTALL_PREFIX}/include/dkyb` and the library to `${INSTALL_PREFIX}/lib`.
 
 ## Powered by
 

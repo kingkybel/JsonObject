@@ -111,7 +111,7 @@ std::string JsonIndexKey::toString() const
     {
         return "[$]";
     }
-    return "[" + std::to_string(index_) + "]";
+    return std::format("[{}]", std::to_string(index_));
 }
 
 bool JsonIndexKey::isIndex() const

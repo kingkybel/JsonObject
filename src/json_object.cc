@@ -110,7 +110,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
         auto const& key = path.getKeys()[i];
         if (key->isIndex())
         {
-            auto* indexKey = dynamic_cast<JsonIndexKey*>(key.get());
+            auto const* indexKey = dynamic_cast<JsonIndexKey*>(key.get());
             if (!is_array(current))
             {
                 if (force)
@@ -119,7 +119,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                 }
                 else
                 {
-                    throw std::runtime_error("Expected array at key: " + path.toString());
+                    throw expected_array_error("Expected array at key: " + path.toString());
                 }
             }
             auto&   arr = as_array(*current);
@@ -143,7 +143,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                     }
                     else
                     {
-                        array_resize(arr, idx + 1);
+                        array_resize(arr, static_cast<size_t>(idx + 1));
                     }
                 }
                 else
@@ -160,14 +160,14 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
             }
             else if (i == path.size() - 1)
             {
-                arr[idx] = value;
+                arr[static_cast<size_t>(idx)] = value;
                 return;
             }
-            current = &arr[idx];
+            current = &arr[static_cast<size_t>(idx)];
         }
         else
         {
-            auto* stringKey = dynamic_cast<JsonStringKey*>(key.get());
+            auto const* stringKey = dynamic_cast<JsonStringKey*>(key.get());
             if (!is_object(current))
             {
                 if (force)
@@ -176,7 +176,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                 }
                 else
                 {
-                    throw std::runtime_error("Expected object at key: " + path.toString());
+                    throw expected_object_error("Expected object at key: " + path.toString());
                 }
             }
             auto& obj = current->as_object();
@@ -193,7 +193,7 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
                 }
                 else
                 {
-                    throw std::runtime_error("Missing key: " + stringKey->getKey());
+                    throw missing_key_error("Missing key: " + stringKey->getKey());
                 }
             }
             current = &obj[stringKey->getKey()];
@@ -201,98 +201,96 @@ void JsonObject::set(JsonKeyPath const& path, value_type const& value, bool forc
     }
 }
 
-std::ostream& prettyPrint(std::ostream& os, value_type const& jv, int indentWidth, std::string* indent = nullptr)
+namespace
+{
+std::ostream& prettyPrintInternal(std::ostream& os, value_type const& jv, size_t indentWidth, std::string& indent);
+
+void printObject(std::ostream& os, object_type const& obj, size_t indentWidth, std::string& indent)
+{
+    os << "{\n";
+    indent.append(indentWidth, ' ');
+    for (auto it = obj.begin(); it != obj.end(); ++it)
+    {
+        if (it != obj.begin())
+        {
+            os << ",\n";
+        }
+        os << indent << to_json_string(it->key()) << " : ";
+        prettyPrintInternal(os, it->value(), indentWidth, indent);
+    }
+    os << "\n";
+    indent.resize(indent.size() - indentWidth);
+    os << indent << "}";
+}
+
+void printArray(std::ostream& os, array_type const& arr, size_t indentWidth, std::string& indent)
+{
+    os << "[\n";
+    indent.append(indentWidth, ' ');
+    for (auto it = arr.begin(); it != arr.end(); ++it)
+    {
+        if (it != arr.begin())
+        {
+            os << ",\n";
+        }
+        os << indent;
+        prettyPrintInternal(os, *it, indentWidth, indent);
+    }
+    os << "\n";
+    indent.resize(indent.size() - indentWidth);
+    os << indent << "]";
+}
+
+std::ostream& prettyPrintInternal(std::ostream& os, value_type const& jv, size_t indentWidth, std::string& indent)
+{
+    using enum util::kind;
+    switch (static_cast<kind>(jv.kind()))
+    {
+        case object:
+            printObject(os, jv.get_object(), indentWidth, indent);
+            break;
+
+        case array:
+            printArray(os, jv.get_array(), indentWidth, indent);
+            break;
+
+        case string:
+            os << to_json_string(jv.get_string());
+            break;
+
+        case uint64:
+            os << jv.get_uint64();
+            break;
+
+        case int64:
+            os << jv.get_int64();
+            break;
+
+        case double_:
+            os << jv.get_double();
+            break;
+
+        case bool_:
+            os << (jv.get_bool() ? "true" : "false");
+            break;
+
+        case null:
+            os << "null";
+            break;
+    }
+    return os;
+}
+} // namespace
+
+std::ostream& prettyPrint(std::ostream& os, value_type const& jv, size_t indentWidth, std::string* indent = nullptr)
 {
     std::string indent_;
     if (!indent)
     {
         indent = &indent_;
     }
-    switch (static_cast<kind>(jv.kind()))
-    {
-        case kind::object:
-        {
-            os << "{\n";
-            indent->append(indentWidth, ' ');
-            auto const& obj = jv.get_object();
-            if (!obj.empty())
-            {
-                auto it = obj.begin();
-                for (;;)
-                {
-                    os << *indent << to_json_string(it->key()) << " : ";
-                    prettyPrint(os, it->value(), indentWidth, indent);
-                    if (++it == obj.end())
-                    {
-                        break;
-                    }
-                    os << ",\n";
-                }
-            }
-            os << "\n";
-            indent->resize(indent->size() - indentWidth);
-            os << *indent << "}";
-            break;
-        }
 
-        case kind::array:
-        {
-            os << "[\n";
-            indent->append(indentWidth, ' ');
-            auto const& arr = jv.get_array();
-            if (!arr.empty())
-            {
-                auto it = arr.begin();
-                for (;;)
-                {
-                    os << *indent;
-                    prettyPrint(os, *it, indentWidth, indent);
-                    if (++it == arr.end())
-                    {
-                        break;
-                    }
-                    os << ",\n";
-                }
-            }
-            os << "\n";
-            indent->resize(indent->size() - indentWidth);
-            os << *indent << "]";
-            break;
-        }
-
-        case kind::string:
-        {
-            os << to_json_string(jv.get_string());
-            break;
-        }
-
-        case kind::uint64:
-            os << jv.get_uint64();
-            break;
-
-        case kind::int64:
-            os << jv.get_int64();
-            break;
-
-        case kind::double_:
-            os << jv.get_double();
-            break;
-
-        case kind::bool_:
-            if (jv.get_bool())
-            {
-                os << "true";
-            }
-            else
-            {
-                os << "false";
-            }
-            break;
-
-        case kind::null:
-            os << "null";
-            break;
-    }
+    prettyPrintInternal(os, jv, indentWidth, *indent);
 
     if (indent->empty())
     {
