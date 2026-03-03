@@ -264,3 +264,46 @@ TEST_F(JsonObjectTest, load_write_open_failure_tests)
     ASSERT_THROW(jsonObj.load("/definitely/not/a/real/file.json"), std::invalid_argument);
     ASSERT_THROW(jsonObj.write("/definitely/not/a/real/file.json"), std::invalid_argument);
 }
+
+TEST_F(JsonObjectTest, pretty_print_exercises_all_local_print_functions_tests)
+{
+    JsonObject jsonObj(R"({
+        "obj": {
+            "s": "text",
+            "u64": 9223372036854775808,
+            "i64": -7,
+            "d": 3.25,
+            "t": true,
+            "f": false,
+            "n": null,
+            "arr": [
+                "x",
+                1,
+                -2,
+                4.5,
+                true,
+                false,
+                null,
+                {
+                    "nestedObj": {"k":"v"},
+                    "nestedArr": [0, {"z": "y"}]
+                }
+            ]
+        }
+    })");
+
+    std::string pretty = jsonObj.toString(2);
+
+    ASSERT_NE(pretty.find("\"obj\" : {"), std::string::npos);
+    ASSERT_NE(pretty.find("\"s\" : \"text\""), std::string::npos);
+    ASSERT_NE(pretty.find("\"u64\" : 9223372036854775808"), std::string::npos);
+    ASSERT_NE(pretty.find("\"i64\" : -7"), std::string::npos);
+    ASSERT_NE(pretty.find("\"d\" : 3.25"), std::string::npos);
+    ASSERT_NE(pretty.find("\"t\" : true"), std::string::npos);
+    ASSERT_NE(pretty.find("\"f\" : false"), std::string::npos);
+    ASSERT_NE(pretty.find("\"n\" : null"), std::string::npos);
+    ASSERT_NE(pretty.find("\"arr\" : ["), std::string::npos);
+
+    // Round-trip check ensures the produced pretty JSON is valid and equivalent.
+    ASSERT_EQ(from_json_string(pretty), jsonObj.get());
+}

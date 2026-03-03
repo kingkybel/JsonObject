@@ -329,7 +329,7 @@ jobs:
           build-wrapper-linux-x86-64 --out-dir bw-output cmake --build "${{env.BUILD_DIR}}" --parallel
 
       - name: Sonar scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:

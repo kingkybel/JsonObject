@@ -110,6 +110,9 @@ class JsonObject
     [[nodiscard]] value_type
         get(JsonKeyPath const& path, std::optional<value_type> const& defaultValue = std::optional<value_type>{}) const;
 
+    void checkBounds(std::optional<util::value_type> const& defaultValue, int64_t idx, util::value_type const* current)
+        const;
+
     /**
      * @brief Set the value in the json object, if possible
      * @param path key-path as string

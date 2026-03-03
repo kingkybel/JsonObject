@@ -70,12 +70,7 @@ value_type JsonObject::get(JsonKeyPath const& path, std::optional<value_type> co
             int64_t idx = indexKey->getIndex(*as_array(current));
             if (idx < 0 || idx >= static_cast<int64_t>(array_size(*as_array(current))))
             {
-                if (!defaultValue)
-                {
-                    std::ostringstream ss;
-                    ss << "Index '" << idx << "' is out of bounds [0.." << array_size(*as_array(current)) - 1 << "]";
-                    throw std::invalid_argument(ss.str());
-                }
+                checkBounds(defaultValue, idx, current);
                 return defaultValue.value();
             }
             current = &as_array(*current)[idx];
@@ -95,6 +90,20 @@ value_type JsonObject::get(JsonKeyPath const& path, std::optional<value_type> co
         }
     }
     return *current;
+}
+
+void JsonObject::checkBounds(
+    std::optional<util::value_type> const& defaultValue,
+    int64_t                                idx,
+    util::value_type const*                current
+) const
+{
+    if (!defaultValue)
+    {
+        std::ostringstream ss;
+        ss << "Index '" << idx << "' is out of bounds [0.." << array_size(*as_array(current)) - 1 << "]";
+        throw std::invalid_argument(ss.str());
+    }
 }
 
 void JsonObject::set(std::string const& path, value_type const& value, bool force)

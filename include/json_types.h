@@ -34,15 +34,6 @@
 #include <string_view>
 #include <utility>
 
-
-namespace std
-{
-inline std::string to_string(boost::json::value const &val)
-{
-    return val.as_string().data();
-}
-} // namespace std
-
 namespace util
 {
 // Order matters
