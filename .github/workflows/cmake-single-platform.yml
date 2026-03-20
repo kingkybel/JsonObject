@@ -219,13 +219,13 @@ jobs:
         cat coverage-summary.txt >> "$GITHUB_STEP_SUMMARY"
         echo '```' >> "$GITHUB_STEP_SUMMARY"
         echo "" >> "$GITHUB_STEP_SUMMARY"
-        echo "HTML report is uploaded as artifact `coverage-html-report`." >> "$GITHUB_STEP_SUMMARY"
+        echo "HTML report is uploaded as artifact `${{ github.event.repository.name }}-coverage-html-report`." >> "$GITHUB_STEP_SUMMARY"
         echo "Open `coverage-html/index.html` after download." >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: unit-test-coverage-report
+        name: ${{ github.event.repository.name }}-unit-test-coverage-report
         path: |
           coverage.filtered.info
           coverage-summary.txt
@@ -235,7 +235,7 @@ jobs:
     - name: Upload HTML coverage report
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-html-report
+        name: ${{ github.event.repository.name }}-coverage-html-report
         path: coverage-html/
         if-no-files-found: error
 
